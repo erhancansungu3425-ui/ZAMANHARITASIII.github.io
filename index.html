@@ -6,63 +6,65 @@
 <title>Zaman Haritası — Unutulmuş Eserler</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
-  :root{
-    --bg:#f6f8fb; --card:#fff; --accent:#0f766e; --muted:#56616b; --radius:12px;
-  }
-  *{box-sizing:border-box}
-  html,body,#app{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;background:var(--bg);color:#0f172a}
-  /* Header */
-  header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(90deg,var(--accent),#06b6d4);color:#fff;position:sticky;top:0;z-index:2000}
-  .logo{width:46px;height:46px;border-radius:10px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px}
-  .header-title h1{margin:0;font-size:18px}
-  .header-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
-  .btn{padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:#fff;cursor:pointer;font-size:13px}
-  .btn.solid{background:#fff;color:var(--accent);border-color:transparent}
-  /* Layout */
-  .container{display:grid;grid-template-columns:360px 1fr;gap:12px;padding:12px;height:calc(100% - 72px)}
-  .sidebar{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 10px 30px rgba(15,23,42,0.05);display:flex;flex-direction:column;gap:10px;overflow:auto}
-  .controls{display:flex;gap:8px;align-items:center}
-  .search input{width:100%;padding:10px;border-radius:10px;border:1px solid #e6e9ef;font-size:15px;background:#fbfdff}
-  .select{padding:9px;border-radius:8px;border:1px solid #e6e9ef;background:#fff;font-size:14px}
-  .list{display:flex;flex-direction:column;gap:8px;margin-top:6px}
-  .item{display:flex;gap:8px;align-items:flex-start;padding:8px;border-radius:10px;background:#fff;cursor:pointer}
-  .item:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(15,23,42,0.04)}
-  .thumb{width:100px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#f0f0f0}
-  .meta h3{margin:0;font-size:14px}
-  .meta p{margin:6px 0 0;color:var(--muted);font-size:13px}
-  .star{font-size:18px;color:#cbd5e1;cursor:pointer}
-  .star.on{color:#f59e0b}
-  /* detail card inside sidebar */
-  .detail{background:#fbfdff;padding:10px;border-radius:10px;border:1px solid #eef2f6}
-  .detail img{width:100%;height:180px;object-fit:cover;border-radius:8px;margin-top:8px}
-  .comments{max-height:220px;overflow:auto;margin-top:8px}
-  .comment{padding:8px;border-radius:8px;border:1px solid #eef2f6;background:white;margin-top:8px}
-  .muted{color:var(--muted);font-size:13px}
-  /* map area */
-  .map-wrap{border-radius:12px;box-shadow:0 10px 30px rgba(15,23,42,0.06);overflow:hidden;height:100%}
-  #map{width:100%;height:100%}
-  /* modal (if used) */
-  .modal{position:fixed;right:12px;left:12px;bottom:12px;background:var(--card);border-radius:12px;padding:12px;box-shadow:0 30px 60px rgba(2,6,23,0.12);max-width:720px;z-index:2500;display:none;max-height:80vh;overflow:auto}
-  .modal.show{display:block}
-  @media(max-width:920px){
-    .container{grid-template-columns:1fr;padding:10px;height:calc(100% - 120px)}
-    .sidebar{position:relative;max-height:46vh}
-    #map{min-height:46vh}
-  }
-  /* auth overlay */
-  .auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:4000}
-  .auth-card{background:#fff;border-radius:12px;padding:18px;width:92%;max-width:420px;box-shadow:0 30px 60px rgba(2,6,23,0.15)}
-  .auth-card h2{margin:0 0 8px 0}
-  .input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;margin-top:8px}
-  .small{font-size:13px;color:var(--muted)}
+:root{
+  --bg:#f6f8fb; --card:#fff; --accent:#0f766e; --muted:#56616b; --radius:12px;
+}
+*{box-sizing:border-box}
+html,body,#app{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;background:var(--bg);color:#0f172a}
+
+/* Header */
+header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(90deg,var(--accent),#06b6d4);color:#fff;position:sticky;top:0;z-index:2000}
+.logo{width:46px;height:46px;border-radius:10px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px}
+.header-title h1{margin:0;font-size:18px}
+.header-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:#fff;cursor:pointer;font-size:13px}
+.btn.solid{background:#fff;color:var(--accent);border-color:transparent}
+
+/* Layout */
+.container{display:grid;grid-template-columns:360px 1fr;gap:12px;padding:12px;height:calc(100% - 72px)}
+.sidebar{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 10px 30px rgba(15,23,42,0.05);display:flex;flex-direction:column;gap:10px;overflow:auto}
+.controls{display:flex;gap:8px;align-items:center}
+.search input{width:100%;padding:10px;border-radius:10px;border:1px solid #e6e9ef;font-size:15px;background:#fbfdff}
+.select{padding:9px;border-radius:8px;border:1px solid #e6e9ef;background:#fff;font-size:14px}
+.list{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.item{display:flex;gap:8px;align-items:flex-start;padding:8px;border-radius:10px;background:#fff;cursor:pointer}
+.item:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(15,23,42,0.04)}
+.thumb{width:100px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#f0f0f0}
+.meta h3{margin:0;font-size:14px}
+.meta p{margin:6px 0 0;color:var(--muted);font-size:13px}
+.star{font-size:18px;color:#cbd5e1;cursor:pointer}
+.star.on{color:#f59e0b}
+
+/* detail card inside sidebar */
+.detail{background:#fbfdff;padding:10px;border-radius:10px;border:1px solid #eef2f6}
+.detail img{width:100%;height:180px;object-fit:cover;border-radius:8px;margin-top:8px}
+.comments{max-height:220px;overflow:auto;margin-top:8px}
+.comment{padding:8px;border-radius:8px;border:1px solid #eef2f6;background:white;margin-top:8px}
+.muted{color:var(--muted);font-size:13px}
+
+/* map area */
+.map-wrap{border-radius:12px;box-shadow:0 10px 30px rgba(15,23,42,0.06);overflow:hidden;height:100%}
+#map{width:100%;height:100%}
+
+/* auth overlay */
+.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:4000}
+.auth-card{background:#fff;border-radius:12px;padding:18px;width:92%;max-width:420px;box-shadow:0 30px 60px rgba(2,6,23,0.15)}
+.auth-card h2{margin:0 0 8px 0}
+.input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;margin-top:8px}
+.small{font-size:13px;color:var(--muted)}
+
+@media(max-width:920px){
+  .container{grid-template-columns:1fr;padding:10px;height:calc(100% - 120px)}
+  .sidebar{position:relative;max-height:46vh}
+  #map{min-height:46vh}
+}
 </style>
 </head>
 <body>
 <div id="app">
-  <!-- AUTH OVERLAY (shows at start) -->
+  <!-- AUTH OVERLAY -->
   <div class="auth-overlay" id="authOverlay" aria-hidden="false">
     <div class="auth-card" role="dialog" aria-modal="true">
-      <!-- By default show Register; link to switch to Login -->
       <div id="registerView">
         <h2>Kayıt Ol</h2>
         <input id="regUser" class="input" placeholder="Kullanıcı adı" />
@@ -174,48 +176,43 @@
       <div id="map" aria-label="Harita"></div>
     </main>
   </div>
-
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-/* ---------------- CONFIG: 25 MEKAN ----------------
- image filenames must be in same folder as index.html (e.g. hasankeyf.jpg)
- book PDFs (optional) expected at books/Pxx.pdf (P01..P25)
---------------------------------------------------*/
+/* ========== CONFIG: 25 places ========== 
+  Filenames MUST match exactly (lowercase, no spaces) and be in same folder as index.html
+  Optional book PDFs: books/P01.pdf ... P25.pdf
+========================================*/
 const PLACES = [
   {id:'P01', name:'Hasankeyf', city:'Batman', coords:[37.8786,41.1241], desc:'Dicle Nehri kıyısında katmanlı arkeolojik yerleşim ve tarihî kalıntılar.', image:'hasankeyf.jpg'},
-  {id:'P02', name:'Göbekli Tepe', city:'Şanlıurfa', coords:[37.2231,38.9226], desc:'Dünyanın en eski tapınak yapılarından; T biçimli dikili taşlar.', image:'gobeklitepe.jpg'},
-  {id:'P03', name:'Nemrut Dağı', city:'Adıyaman', coords:[37.9845,38.7445], desc:'Dev heykelleri ve anıtsal mezar tepesiyle bilinir.', image:'nemrut.jpg'},
-  {id:'P04', name:'Efes (Celsus Kütüphanesi)', city:'İzmir', coords:[37.9410,27.3416], desc:'Antik kentin ünlü kütüphanesi ve liman kenti kalıntıları.', image:'efes.jpg'},
-  {id:'P05', name:'Pamukkale Travertenleri', city:'Denizli', coords:[37.9241,29.1180], desc:'Termal kaynakların oluşturduğu beyaz traverten terasları.', image:'pamukkale.jpg'},
-  {id:'P06', name:'Kapadokya (Göreme)', city:'Nevşehir', coords:[38.6431,34.8276], desc:'Peri bacaları, kaya kiliseleri ve yer altı şehirleri.', image:'kapadokya.jpg'},
-  {id:'P07', name:'Topkapı Sarayı', city:'İstanbul', coords:[41.0128,28.9833], desc:'Osmanlı padişahlarının sarayı; önemli kültürel miras.', image:'topkapi.jpg'},
-  {id:'P08', name:'Ayasofya', city:'İstanbul', coords:[41.0086,28.9802], desc:'Bizans ve Osmanlı dönemlerinin izlerini taşıyan büyük yapı.', image:'ayasofya.jpg'},
-  {id:'P09', name:'Aspendos', city:'Antalya', coords:[36.9383,31.1761], desc:'Roma dönemi tiyatrosu; iyi korunmuş akustik yapısı ile ünlü.', image:'aspendos.jpg'},
-  {id:'P10', name:'Ani Harabeleri', city:'Kars', coords:[40.5070,43.5720], desc:'Ticaret yolları üzerinde ortaçağ kenti kalıntıları.', image:'ani.jpg'},
-  {id:'P11', name:'Safranbolu Evleri', city:'Karabük', coords:[41.2500,32.6900], desc:'Osmanlı dönemi ev dokusu ve sivil mimarlık örnekleri.', image:'safranbolu.jpg'},
-  {id:'P12', name:'Truva (Troy)', city:'Çanakkale', coords:[39.9570,26.2384], desc:'Efsanevi Truva kenti arkeolojik kalıntıları.', image:'truva.jpg'},
-  {id:'P13', name:'Sümela Manastırı', city:'Trabzon', coords:[40.7114,39.7172], desc:'Dağ yamacına oyulmuş manastır ve freskleriyle ünlü.', image:'sumela.jpg'},
-  {id:'P14', name:'Bergama (Pergamon)', city:'İzmir', coords:[39.1200,27.1830], desc:'Helenistik akropol ve Asklepion kalıntıları.', image:'bergama.jpg'},
-  {id:'P15', name:'Sagalassos', city:'Burdur', coords:[37.6760,30.5260], desc:'Yüksek rakımlı antik kent ve tiyatro kalıntıları.', image:'sagalassos.jpg'},
-  {id:'P16', name:'Çatalhöyük', city:'Konya', coords:[37.6670,32.8260], desc:'Neolitik dönem yerleşimi; erken tarım toplum örneği.', image:'catalhoyuk.jpg'},
-  {id:'P17', name:'Zeugma Mozaik Müzesi', city:'Gaziantep', coords:[37.0662,37.3833], desc:'Zengin mozaik koleksiyonlarıyla bilinir.', image:'zeugma.jpg'},
-  {id:'P18', name:'Harran', city:'Şanlıurfa', coords:[36.9195,39.0214], desc:'Küp evleri ve antik yerleşim izleriyle dikkat çeker.', image:'harran.jpg'},
-  {id:'P19', name:'Perge', city:'Antalya', coords:[36.9191,30.9186], desc:'Helenistik ve Roma dönemi kalıntıları.', image:'perge.jpg'},
-  {id:'P20', name:'Bodrum Kalesi', city:'Muğla', coords:[37.0344,27.4305], desc:'Sualtı Arkeoloji Müzesi dahil kale ve liman bölgesi.', image:'bodrum.jpg'},
-  {id:'P21', name:'Selimiye Camii', city:'Edirne', coords:[41.6771,26.5665], desc:'Mimar Sinan’ın başyapıtlarından biri.', image:'selimiye.jpg'},
-  {id:'P22', name:'Diyarbakır Surları', city:'Diyarbakır', coords:[37.9154,40.2291], desc:'Geniş taş sur sistemi ve tarihî girişler.', image:'diyarbakir.jpg'},
-  {id:'P23', name:'Çifte Minareli Medrese', city:'Erzurum', coords:[39.9070,41.2670], desc:'Selçuklu taş işçiliği örneği.', image:'cifteminare.jpg'},
-  {id:'P24', name:'Yassıada', city:'İstanbul', coords:[40.8090,29.1090], desc:'Tarihi ada ve anıt yapılar.', image:'yassiada.jpg'},
-  {id:'P25', name:'Beypazarı Tarihi Evleri', city:'Ankara', coords:[40.1840,31.0389], desc:'Osmanlı dönemi ev mimarisi ve geleneksel dokusu.', image:'beypazari.jpg'}
+  {id:'P02', name:'Safranbolu Evleri', city:'Karabük', coords:[41.2500,32.6900], desc:'Osmanlı dönemi ev dokusu ve sivil mimarlık örnekleri.', image:'safranbolu.jpg'},
+  {id:'P03', name:'Göbekli Tepe', city:'Şanlıurfa', coords:[37.2231,38.9226], desc:'Dünyanın en eski tapınak yapılarından; T biçimli dikili taşlar.', image:'gobeklitepe.jpg'},
+  {id:'P04', name:'Pamukkale Travertenleri', city:'Denizli', coords:[37.9241,29.1180], desc:'Termal kaynakların oluşturduğu beyaz traverten terasları ve Hierapolis.', image:'pamukkale.jpg'},
+  {id:'P05', name:'Kapadokya', city:'Nevşehir', coords:[38.6431,34.8276], desc:'Peri bacaları, kaya kiliseleri ve yer altı şehirleriyle ünlü bölge.', image:'kapadokya.jpg'},
+  {id:'P06', name:'Topkapı Sarayı', city:'İstanbul', coords:[41.0128,28.9833], desc:'Osmanlı padişahlarının resmi sarayı, hazine koleksiyonları.', image:'topkapi.jpg'},
+  {id:'P07', name:'Ani Harabeleri', city:'Kars', coords:[40.5070,43.5720], desc:'İpek Yolu üzerinde ortaçağ kenti kalıntıları.', image:'ani.jpg'},
+  {id:'P08', name:'Nemrut Dağı', city:'Adıyaman', coords:[37.9845,38.7445], desc:'Kommagene kral mezar tepesi; dev heykeller ve gün doğumu manzarası.', image:'nemrut.jpg'},
+  {id:'P09', name:'Truva Antik Kenti', city:'Çanakkale', coords:[39.9570,26.2384], desc:'Efsanevi Truva kenti ve arkeolojik kalıntıları.', image:'truva.jpg'},
+  {id:'P10', name:'Efes Antik Kenti', city:'İzmir', coords:[37.9410,27.3416], desc:'Antik kentin Celsus Kütüphanesi ve liman bölgesi.', image:'efes.jpg'},
+  {id:'P11', name:'Sümela Manastırı', city:'Trabzon', coords:[40.7114,39.7172], desc:'Dağ yamacına oyulmuş tarihi manastır kompleksi.', image:'sumela.jpg'},
+  {id:'P12', name:'Mardin Eski Şehir', city:'Mardin', coords:[37.3120,40.7350], desc:'Tarihi taş evler ve çok katmanlı kültürel yapı.', image:'mardin.jpg'},
+  {id:'P13', name:'Van Kalesi', city:'Van', coords:[38.4940,43.3800], desc:'Tarihi kale ve göl manzaraları.', image:'van.jpg'},
+  {id:'P14', name:'Alanya Kalesi', city:'Antalya', coords:[36.5436,32.0000], desc:'Tarihi kale, liman ve manzaralar.', image:'alanya.jpg'},
+  {id:'P15', name:'Hattuşa Antik Kenti', city:'Çorum', coords:[40.0240,34.6190], desc:'Hititlerin başkenti; tapınaklar ve anıtsal yapılar.', image:'hattusa.jpg'},
+  {id:'P16', name:'Bergama Antik Kenti', city:'İzmir', coords:[39.1200,27.1830], desc:'Helenistik akropol ve Asklepion kalıntıları.', image:'bergama.jpg'},
+  {id:'P17', name:'Çatalhöyük', city:'Konya', coords:[37.6670,32.8260], desc:'Neolitik dönem yerleşimi; erken tarım toplumu örneği.', image:'catalhoyuk.jpg'},
+  {id:'P18', name:'Ulu Cami (Bursa)', city:'Bursa', coords:[40.1828,29.0616], desc:'Bursa’nın en büyük camisi; tarihî yapı ve çarşı.', image:'ulucami.jpg'},
+  {id:'P19', name:'Perge Antik Kenti', city:'Antalya', coords:[36.9191,30.9186], desc:'Helenistik ve Roma dönemi kalıntıları ile sütunlu caddeler.', image:'perge.jpg'},
+  {id:'P20', name:'Aphrodisias', city:'Aydın', coords:[37.8000,27.8747], desc:'Tanrıça Afrodit’e adanmış antik kent.', image:'aphrodisias.jpg'},
+  {id:'P21', name:'Sardes Antik Kenti', city:'Manisa', coords:[38.4833,27.0333], desc:'Lidya başkenti; tapınak ve tiyatro kalıntıları.', image:'sardes.jpg'},
+  {id:'P22', name:'Harran Evleri', city:'Şanlıurfa', coords:[36.9195,39.0214], desc:'Küp evleri ve antik yerleşim izleriyle bilinir.', image:'harran.jpg'},
+  {id:'P23', name:'Zeugma Mozaik Müzesi', city:'Gaziantep', coords:[37.0662,37.3833], desc:'Dünyanın en zengin mozaik koleksiyonlarından biri.', image:'zeugma.jpg'},
+  {id:'P24', name:'Bergama Asklepion', city:'İzmir', coords:[39.1220,27.1830], desc:'Antik dönemde sağlık merkezi olarak kullanılan Asklepion.', image:'asklepion.jpg'},
+  {id:'P25', name:'Ayasofya Camii', city:'İstanbul', coords:[41.0086,28.9802], desc:'Bizans ve Osmanlı dönemlerinden izler taşıyan büyük yapı.', image:'ayasofya.jpg'}
 ];
 
-/* ---------------- Storage helpers ----------------
- - Users stored at key 'zh_users' : { username: { passHash, favorites:[], warnings:0, banned:false } }
- - Comments stored at key 'zh_comments' : { placeId: [ {user, text, time} ] }
- - Remembered username at 'zh_remember'
--------------------------------------------------*/
+/* ========== Storage helpers ========== */
 function loadUsers(){ try{ return JSON.parse(localStorage.getItem('zh_users')||'{}'); }catch(e){return{}} }
 function saveUsers(u){ localStorage.setItem('zh_users', JSON.stringify(u)); }
 function loadComments(){ try{ return JSON.parse(localStorage.getItem('zh_comments')||'{}'); }catch(e){return{}} }
@@ -224,7 +221,7 @@ function setRemember(u){ localStorage.setItem('zh_remember', u); }
 function clearRemember(){ localStorage.removeItem('zh_remember'); }
 function getRemember(){ return localStorage.getItem('zh_remember') || null; }
 
-// SHA-256 helper for password hashing
+/* SHA-256 helper for password hashing */
 async function hashStr(str){
   const enc = new TextEncoder();
   const data = enc.encode(str);
@@ -232,19 +229,20 @@ async function hashStr(str){
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
-/* ---------- Profanity / moderation ---------- */
-const PROFANITY = ['orospu','piç','pezevenk','siktir','anan','amk','yarrak','göt','kahbe','oç','yarrak','sik'];
+/* Profanity list and check */
+const PROFANITY = ['orospu','piç','pezevenk','siktir','anan','amk','yarrak','göt','kahbe','oç','sik'];
 function containsProfanity(text){
   if(!text) return false;
   const t = text.toLowerCase();
   return PROFANITY.some(w => t.includes(w));
 }
 
-/* ---------- App state & UI refs ---------- */
+/* App state & refs */
 let currentUser = null;
 let map = null;
 let markers = [];
 let showingFavsOnly = false;
+let selectedPlace = null;
 
 const authOverlay = document.getElementById('authOverlay');
 const registerView = document.getElementById('registerView');
@@ -287,17 +285,9 @@ const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 const zoomInBtn = document.getElementById('zoomInBtn');
 const zoomOutBtn = document.getElementById('zoomOutBtn');
 
-let selectedPlace = null;
-
-/* ---------------- AUTH: register / login ---------------- */
-showLogin.addEventListener('click', ()=>{
-  registerView.style.display = 'none';
-  loginView.style.display = 'block';
-});
-showRegister.addEventListener('click', ()=>{
-  registerView.style.display = 'block';
-  loginView.style.display = 'none';
-});
+/* ---------- AUTH handlers ---------- */
+showLogin.addEventListener('click', ()=>{ registerView.style.display='none'; loginView.style.display='block'; });
+showRegister.addEventListener('click', ()=>{ registerView.style.display='block'; loginView.style.display='none'; });
 
 doRegister.addEventListener('click', async ()=>{
   const u = (regUser.value||'').trim();
@@ -312,8 +302,7 @@ doRegister.addEventListener('click', async ()=>{
   currentUser = u;
   if(rem) setRemember(u);
   authOverlay.style.display = 'none';
-  ensureUser();
-  initApp();
+  ensureUserAndStart();
 });
 
 doLogin.addEventListener('click', async ()=>{
@@ -329,8 +318,7 @@ doLogin.addEventListener('click', async ()=>{
   currentUser = u;
   if(rem) setRemember(u); else clearRemember();
   authOverlay.style.display = 'none';
-  ensureUser();
-  initApp();
+  ensureUserAndStart();
 });
 
 (function autoRemember(){
@@ -339,7 +327,9 @@ doLogin.addEventListener('click', async ()=>{
   if(r && users[r] && !users[r].banned){
     currentUser = r;
     authOverlay.style.display = 'none';
-    ensureUser();
+    ensureUserAndStart();
+  } else {
+    authOverlay.style.display = 'flex';
   }
 })();
 
@@ -351,13 +341,15 @@ logoutBtn.addEventListener('click', ()=>{
   updateWelcome();
 });
 
-/* ensure user data structures exist */
-function ensureUser(){
+/* ensure user structure */
+function ensureUserAndStart(){
   const users = loadUsers();
   if(!currentUser) return;
   if(!users[currentUser]) users[currentUser] = { passHash:'', favorites:[], warnings:0, banned:false };
   saveUsers(users);
   updateWelcome();
+  if(!map) initMap();
+  renderPlaces();
 }
 
 /* update welcome UI */
@@ -373,16 +365,16 @@ function updateWelcome(){
   }
 }
 
-/* ---------------- MAP & UI ---------------- */
+/* ---------- Map & UI ---------- */
 function initMap(){
   map = L.map('map', {tap:true}).setView([39.0,35.0],5);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap contributors'}).addTo(map);
   renderPlaces();
 }
 
-/* build city select */
+/* build city options */
 (function buildCities(){
-  const cities = Array.from(new Set(PLACES.map(p=>p.city))).sort();
+  const cities = Array.from(new Set(PLACES.map(p=>p.city))).sort((a,b)=>a.localeCompare(b,'tr'));
   cities.forEach(c=>{
     const opt = document.createElement('option'); opt.value = c; opt.innerText = c;
     citySelect.appendChild(opt);
@@ -417,9 +409,6 @@ function toggleFavorite(placeId){
 }
 
 /* comments helpers */
-function getAllComments(){
-  return loadComments();
-}
 function getCommentsFor(placeId){
   const all = loadComments();
   return all[placeId] || [];
@@ -527,12 +516,10 @@ postCommentBtn.addEventListener('click', ()=>{
   const text = (commentInput.value||'').trim();
   if(!text){ alert('Yorum boş olamaz.'); return; }
   if(containsProfanity(text)){
-    // register warning; do not save comment
     registerWarning(currentUser);
     commentStatus.innerText = 'Uygunsuz içerik tespit edildi ve kaydedilmedi.';
     commentInput.value = '';
     if(loadUsers()[currentUser] && loadUsers()[currentUser].banned){
-      // force logout
       alert('Hesabınız yasaklandı.');
       currentUser = null;
       updateWelcome();
@@ -548,54 +535,22 @@ postCommentBtn.addEventListener('click', ()=>{
 });
 
 /* utility escape */
-function escapeHtml(s){ return s.replace(/[&<"'>]/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]; }); }
+function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<"'>]/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]; }); }
 
-/* ----------------- INIT ----------------- */
+/* init */
 window.addEventListener('load', ()=>{
-  // ensure remembered user
+  updateWelcome();
   const rem = getRemember();
   const users = loadUsers();
   if(rem && users[rem] && !users[rem].banned){
     currentUser = rem;
     authOverlay.style.display = 'none';
-    ensureUser();
+    ensureUserAndStart();
   } else {
     authOverlay.style.display = 'flex';
   }
-  updateWelcome();
-  initMap();
-});
-
-/* initMap called above in initMap; define alias for late binding */
-function initApp(){
   if(!map) initMap();
-  renderPlaces();
-}
-
-/* small safety: clicking detailFav toggles */
-detailFavBtn.addEventListener('click', ()=>{
-  if(!currentUser){ alert('Beğenmek için giriş yapın.'); return; }
-  if(!selectedPlace) return;
-  toggleFavorite(selectedPlace.id);
-  detailFavBtn.innerText = getFavorites().includes(selectedPlace.id) ? '★ Beğenden Kaldır' : '☆ Beğen';
-  renderPlaces();
 });
-
-/* simple navigate button: opens Google Maps in new tab */
-detailNav.addEventListener('click', ()=>{
-  if(!selectedPlace) return;
-  const [lat,lon] = selectedPlace.coords;
-  const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
-  window.open(url,'_blank');
-});
-
-/* helper to call initMap if needed */
-function initMap(){
-  if(map) return;
-  map = L.map('map', {tap:true}).setView([39.0,35.0],5);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap contributors'}).addTo(map);
-  renderPlaces();
-}
 </script>
 </body>
 </html>
