@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Zaman Haritası — Unutulmuş Eserler</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#fff; --accent:#0f766e; --muted:#56616b; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body,#app{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;background:var(--bg);color:#0f172a}
+  /* Header */
+  header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(90deg,var(--accent),#06b6d4);color:#fff;position:sticky;top:0;z-index:2000}
+  .logo{width:46px;height:46px;border-radius:10px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px}
+  .header-title h1{margin:0;font-size:18px}
+  .header-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .btn{padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:#fff;cursor:pointer;font-size:13px}
+  .btn.solid{background:#fff;color:var(--accent);border-color:transparent}
+  /* Layout */
+  .container{display:grid;grid-template-columns:360px 1fr;gap:12px;padding:12px;height:calc(100% - 72px)}
+  .sidebar{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 10px 30px rgba(15,23,42,0.05);display:flex;flex-direction:column;gap:10px;overflow:auto}
+  .controls{display:flex;gap:8px;align-items:center}
+  .search input{width:100%;padding:10px;border-radius:10px;border:1px solid #e6e9ef;font-size:15px;background:#fbfdff}
+  .select{padding:9px;border-radius:8px;border:1px solid #e6e9ef;background:#fff;font-size:14px}
+  .list{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .item{display:flex;gap:8px;align-items:flex-start;padding:8px;border-radius:10px;background:#fff;cursor:pointer}
+  .item:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(15,23,42,0.04)}
+  .thumb{width:100px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#f0f0f0}
+  .meta h3{margin:0;font-size:14px}
+  .meta p{margin:6px 0 0;color:var(--muted);font-size:13px}
+  .star{font-size:18px;color:#cbd5e1;cursor:pointer}
+  .star.on{color:#f59e0b}
+  /* detail card inside sidebar */
+  .detail{background:#fbfdff;padding:10px;border-radius:10px;border:1px solid #eef2f6}
+  .detail img{width:100%;height:180px;object-fit:cover;border-radius:8px;margin-top:8px}
+  .comments{max-height:220px;overflow:auto;margin-top:8px}
+  .comment{padding:8px;border-radius:8px;border:1px solid #eef2f6;background:white;margin-top:8px}
+  .muted{color:var(--muted);font-size:13px}
+  /* map area */
+  .map-wrap{border-radius:12px;box-shadow:0 10px 30px rgba(15,23,42,0.06);overflow:hidden;height:100%}
+  #map{width:100%;height:100%}
+  /* modal (if used) */
+  .modal{position:fixed;right:12px;left:12px;bottom:12px;background:var(--card);border-radius:12px;padding:12px;box-shadow:0 30px 60px rgba(2,6,23,0.12);max-width:720px;z-index:2500;display:none;max-height:80vh;overflow:auto}
+  .modal.show{display:block}
+  @media(max-width:920px){
+    .container{grid-template-columns:1fr;padding:10px;height:calc(100% - 120px)}
+    .sidebar{position:relative;max-height:46vh}
+    #map{min-height:46vh}
+  }
+  /* auth overlay */
+  .auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:4000}
+  .auth-card{background:#fff;border-radius:12px;padding:18px;width:92%;max-width:420px;box-shadow:0 30px 60px rgba(2,6,23,0.15)}
+  .auth-card h2{margin:0 0 8px 0}
+  .input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;margin-top:8px}
+  .small{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- AUTH OVERLAY (shows at start) -->
+  <div class="auth-overlay" id="authOverlay" aria-hidden="false">
+    <div class="auth-card" role="dialog" aria-modal="true">
+      <!-- By default show Register; link to switch to Login -->
+      <div id="registerView">
+        <h2>Kayıt Ol</h2>
+        <input id="regUser" class="input" placeholder="Kullanıcı adı" />
+        <input id="regPass" class="input" placeholder="Şifre" type="password" />
+        <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="regRemember" /> Beni hatırla</label>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button id="doRegister" class="btn solid" style="flex:1">Kayıt Ol</button>
+          <button id="showLogin" class="btn" style="flex:1">Hesabınız var mı?</button>
+        </div>
+      </div>
+
+      <div id="loginView" style="display:none">
+        <h2>Giriş Yap</h2>
+        <input id="logUser" class="input" placeholder="Kullanıcı adı" />
+        <input id="logPass" class="input" placeholder="Şifre" type="password" />
+        <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="logRemember" /> Beni hatırla</label>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button id="doLogin" class="btn solid" style="flex:1">Giriş Yap</button>
+          <button id="showRegister" class="btn" style="flex:1">Kayıt Ol</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">Z</div>
+    <div class="header-title">
+      <h1>Zaman Haritası</h1>
+      <div class="small">Unutulmuş eserleri keşfet — beğen, yorumla, indir</div>
+    </div>
+    <div class="header-actions" role="region" aria-label="Kullanıcı">
+      <div id="welcomeBox" style="text-align:right">
+        <div id="welcomeText" style="font-weight:700">Giriş yapılmadı</div>
+        <div id="welcomeSub" class="small">Lütfen giriş yapın</div>
+      </div>
+      <button id="logoutBtn" class="btn" style="display:none">Çıkış</button>
+      <button id="favFilterBtn" class="btn">Sadece Beğendiklerim</button>
+      <button id="fitAllBtn" class="btn">Hepsini Göster</button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <div class="container" role="main">
+    <aside class="sidebar" aria-label="Mekan listesi">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>Mekanlar</strong><div class="small">Listeden seçim yapın</div></div>
+        <div class="small"><span id="count">25</span> nokta</div>
+      </div>
+
+      <div class="controls" style="margin-top:8px">
+        <div style="flex:1" class="search"><input id="searchInput" placeholder="Ara: isim, şehir veya anahtar kelime..." /></div>
+        <select id="citySelect" class="select" title="Şehir seç"><option value="all">Tüm Şehirler</option></select>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="clearFiltersBtn" class="btn">Temizle</button>
+      </div>
+
+      <!-- Detail card (shows selected place details & comments) -->
+      <div id="detailCard" class="detail" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div id="detailName" style="font-weight:700"></div>
+            <div id="detailCity" class="small" style="color:var(--muted)"></div>
+          </div>
+          <div>
+            <button id="detailFavBtn" class="btn">☆ Beğen</button>
+          </div>
+        </div>
+        <img id="detailImage" src="" alt="">
+        <p id="detailDesc" class="small" style="margin-top:8px"></p>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <a id="detailBook" class="btn solid" href="#" target="_blank">📖 Kitabı İndir</a>
+          <button id="detailNav" class="btn">Navigasyon</button>
+        </div>
+
+        <hr style="margin-top:12px">
+
+        <div>
+          <h4 style="margin:0">Yorumlar</h4>
+          <div id="commentsList" class="comments"></div>
+
+          <textarea id="commentInput" placeholder="Yorum yaz..." style="width:100%;min-height:70px;padding:8px;border-radius:8px;border:1px solid #e6e9ef;margin-top:8px"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="postCommentBtn" class="btn solid">Gönder</button>
+            <div id="commentStatus" class="small" style="align-self:center"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Places list -->
+      <div class="list" id="placesList" aria-live="polite" style="margin-top:8px"></div>
+
+      <footer style="margin-top:auto" class="sidefoot">
+        <small id="sourceNote">Kaynakça: Türkiye Kültür ve Turizm, Wikimedia Commons, yerel kaynaklar.</small>
+        <small style="color:var(--accent);font-weight:700">EUO TECH</small>
+      </footer>
+    </aside>
+
+    <main class="map-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(255,255,255,0.6)">
+        <div style="font-weight:700">Türkiye — Unutulmuş Eserler Haritası</div>
+        <div>
+          <button id="zoomInBtn" class="btn">+</button>
+          <button id="zoomOutBtn" class="btn">−</button>
+        </div>
+      </div>
+      <div id="map" aria-label="Harita"></div>
+    </main>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+/* ---------------- CONFIG: 25 MEKAN ----------------
+ image filenames must be in same folder as index.html (e.g. hasankeyf.jpg)
+ book PDFs (optional) expected at books/Pxx.pdf (P01..P25)
+--------------------------------------------------*/
+const PLACES = [
+  {id:'P01', name:'Hasankeyf', city:'Batman', coords:[37.8786,41.1241], desc:'Dicle Nehri kıyısında katmanlı arkeolojik yerleşim ve tarihî kalıntılar.', image:'hasankeyf.jpg'},
+  {id:'P02', name:'Göbekli Tepe', city:'Şanlıurfa', coords:[37.2231,38.9226], desc:'Dünyanın en eski tapınak yapılarından; T biçimli dikili taşlar.', image:'gobeklitepe.jpg'},
+  {id:'P03', name:'Nemrut Dağı', city:'Adıyaman', coords:[37.9845,38.7445], desc:'Dev heykelleri ve anıtsal mezar tepesiyle bilinir.', image:'nemrut.jpg'},
+  {id:'P04', name:'Efes (Celsus Kütüphanesi)', city:'İzmir', coords:[37.9410,27.3416], desc:'Antik kentin ünlü kütüphanesi ve liman kenti kalıntıları.', image:'efes.jpg'},
+  {id:'P05', name:'Pamukkale Travertenleri', city:'Denizli', coords:[37.9241,29.1180], desc:'Termal kaynakların oluşturduğu beyaz traverten terasları.', image:'pamukkale.jpg'},
+  {id:'P06', name:'Kapadokya (Göreme)', city:'Nevşehir', coords:[38.6431,34.8276], desc:'Peri bacaları, kaya kiliseleri ve yer altı şehirleri.', image:'kapadokya.jpg'},
+  {id:'P07', name:'Topkapı Sarayı', city:'İstanbul', coords:[41.0128,28.9833], desc:'Osmanlı padişahlarının sarayı; önemli kültürel miras.', image:'topkapi.jpg'},
+  {id:'P08', name:'Ayasofya', city:'İstanbul', coords:[41.0086,28.9802], desc:'Bizans ve Osmanlı dönemlerinin izlerini taşıyan büyük yapı.', image:'ayasofya.jpg'},
+  {id:'P09', name:'Aspendos', city:'Antalya', coords:[36.9383,31.1761], desc:'Roma dönemi tiyatrosu; iyi korunmuş akustik yapısı ile ünlü.', image:'aspendos.jpg'},
+  {id:'P10', name:'Ani Harabeleri', city:'Kars', coords:[40.5070,43.5720], desc:'Ticaret yolları üzerinde ortaçağ kenti kalıntıları.', image:'ani.jpg'},
+  {id:'P11', name:'Safranbolu Evleri', city:'Karabük', coords:[41.2500,32.6900], desc:'Osmanlı dönemi ev dokusu ve sivil mimarlık örnekleri.', image:'safranbolu.jpg'},
+  {id:'P12', name:'Truva (Troy)', city:'Çanakkale', coords:[39.9570,26.2384], desc:'Efsanevi Truva kenti arkeolojik kalıntıları.', image:'truva.jpg'},
+  {id:'P13', name:'Sümela Manastırı', city:'Trabzon', coords:[40.7114,39.7172], desc:'Dağ yamacına oyulmuş manastır ve freskleriyle ünlü.', image:'sumela.jpg'},
+  {id:'P14', name:'Bergama (Pergamon)', city:'İzmir', coords:[39.1200,27.1830], desc:'Helenistik akropol ve Asklepion kalıntıları.', image:'bergama.jpg'},
+  {id:'P15', name:'Sagalassos', city:'Burdur', coords:[37.6760,30.5260], desc:'Yüksek rakımlı antik kent ve tiyatro kalıntıları.', image:'sagalassos.jpg'},
+  {id:'P16', name:'Çatalhöyük', city:'Konya', coords:[37.6670,32.8260], desc:'Neolitik dönem yerleşimi; erken tarım toplum örneği.', image:'catalhoyuk.jpg'},
+  {id:'P17', name:'Zeugma Mozaik Müzesi', city:'Gaziantep', coords:[37.0662,37.3833], desc:'Zengin mozaik koleksiyonlarıyla bilinir.', image:'zeugma.jpg'},
+  {id:'P18', name:'Harran', city:'Şanlıurfa', coords:[36.9195,39.0214], desc:'Küp evleri ve antik yerleşim izleriyle dikkat çeker.', image:'harran.jpg'},
+  {id:'P19', name:'Perge', city:'Antalya', coords:[36.9191,30.9186], desc:'Helenistik ve Roma dönemi kalıntıları.', image:'perge.jpg'},
+  {id:'P20', name:'Bodrum Kalesi', city:'Muğla', coords:[37.0344,27.4305], desc:'Sualtı Arkeoloji Müzesi dahil kale ve liman bölgesi.', image:'bodrum.jpg'},
+  {id:'P21', name:'Selimiye Camii', city:'Edirne', coords:[41.6771,26.5665], desc:'Mimar Sinan’ın başyapıtlarından biri.', image:'selimiye.jpg'},
+  {id:'P22', name:'Diyarbakır Surları', city:'Diyarbakır', coords:[37.9154,40.2291], desc:'Geniş taş sur sistemi ve tarihî girişler.', image:'diyarbakir.jpg'},
+  {id:'P23', name:'Çifte Minareli Medrese', city:'Erzurum', coords:[39.9070,41.2670], desc:'Selçuklu taş işçiliği örneği.', image:'cifteminare.jpg'},
+  {id:'P24', name:'Yassıada', city:'İstanbul', coords:[40.8090,29.1090], desc:'Tarihi ada ve anıt yapılar.', image:'yassiada.jpg'},
+  {id:'P25', name:'Beypazarı Tarihi Evleri', city:'Ankara', coords:[40.1840,31.0389], desc:'Osmanlı dönemi ev mimarisi ve geleneksel dokusu.', image:'beypazari.jpg'}
+];
+
+/* ---------------- Storage helpers ----------------
+ - Users stored at key 'zh_users' : { username: { passHash, favorites:[], warnings:0, banned:false } }
+ - Comments stored at key 'zh_comments' : { placeId: [ {user, text, time} ] }
+ - Remembered username at 'zh_remember'
+-------------------------------------------------*/
+function loadUsers(){ try{ return JSON.parse(localStorage.getItem('zh_users')||'{}'); }catch(e){return{}} }
+function saveUsers(u){ localStorage.setItem('zh_users', JSON.stringify(u)); }
+function loadComments(){ try{ return JSON.parse(localStorage.getItem('zh_comments')||'{}'); }catch(e){return{}} }
+function saveComments(c){ localStorage.setItem('zh_comments', JSON.stringify(c)); }
+function setRemember(u){ localStorage.setItem('zh_remember', u); }
+function clearRemember(){ localStorage.removeItem('zh_remember'); }
+function getRemember(){ return localStorage.getItem('zh_remember') || null; }
+
+// SHA-256 helper for password hashing
+async function hashStr(str){
+  const enc = new TextEncoder();
+  const data = enc.encode(str);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+/* ---------- Profanity / moderation ---------- */
+const PROFANITY = ['orospu','piç','pezevenk','siktir','anan','amk','yarrak','göt','kahbe','oç','yarrak','sik'];
+function containsProfanity(text){
+  if(!text) return false;
+  const t = text.toLowerCase();
+  return PROFANITY.some(w => t.includes(w));
+}
+
+/* ---------- App state & UI refs ---------- */
+let currentUser = null;
+let map = null;
+let markers = [];
+let showingFavsOnly = false;
+
+const authOverlay = document.getElementById('authOverlay');
+const registerView = document.getElementById('registerView');
+const loginView = document.getElementById('loginView');
+const regUser = document.getElementById('regUser');
+const regPass = document.getElementById('regPass');
+const regRemember = document.getElementById('regRemember');
+const doRegister = document.getElementById('doRegister');
+const showLogin = document.getElementById('showLogin');
+
+const logUser = document.getElementById('logUser');
+const logPass = document.getElementById('logPass');
+const logRemember = document.getElementById('logRemember');
+const doLogin = document.getElementById('doLogin');
+const showRegister = document.getElementById('showRegister');
+
+const welcomeText = document.getElementById('welcomeText');
+const welcomeSub = document.getElementById('welcomeSub');
+const logoutBtn = document.getElementById('logoutBtn');
+const favFilterBtn = document.getElementById('favFilterBtn');
+const fitAllBtn = document.getElementById('fitAllBtn');
+
+const citySelect = document.getElementById('citySelect');
+const placesListEl = document.getElementById('placesList');
+const countEl = document.getElementById('count');
+const searchInput = document.getElementById('searchInput');
+const detailCard = document.getElementById('detailCard');
+const detailName = document.getElementById('detailName');
+const detailCity = document.getElementById('detailCity');
+const detailImage = document.getElementById('detailImage');
+const detailDesc = document.getElementById('detailDesc');
+const detailFavBtn = document.getElementById('detailFavBtn');
+const detailBook = document.getElementById('detailBook');
+const detailNav = document.getElementById('detailNav');
+const commentsList = document.getElementById('commentsList');
+const commentInput = document.getElementById('commentInput');
+const postCommentBtn = document.getElementById('postCommentBtn');
+const commentStatus = document.getElementById('commentStatus');
+const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+const zoomInBtn = document.getElementById('zoomInBtn');
+const zoomOutBtn = document.getElementById('zoomOutBtn');
+
+let selectedPlace = null;
+
+/* ---------------- AUTH: register / login ---------------- */
+showLogin.addEventListener('click', ()=>{
+  registerView.style.display = 'none';
+  loginView.style.display = 'block';
+});
+showRegister.addEventListener('click', ()=>{
+  registerView.style.display = 'block';
+  loginView.style.display = 'none';
+});
+
+doRegister.addEventListener('click', async ()=>{
+  const u = (regUser.value||'').trim();
+  const p = (regPass.value||'').trim();
+  const rem = regRemember.checked;
+  if(!u || !p){ alert('Kullanıcı adı ve şifre girin.'); return; }
+  const users = loadUsers();
+  if(users[u]){ alert('Bu kullanıcı zaten kayıtlı.'); return; }
+  const passHash = await hashStr(p);
+  users[u] = { passHash, favorites:[], warnings:0, banned:false };
+  saveUsers(users);
+  currentUser = u;
+  if(rem) setRemember(u);
+  authOverlay.style.display = 'none';
+  ensureUser();
+  initApp();
+});
+
+doLogin.addEventListener('click', async ()=>{
+  const u = (logUser.value||'').trim();
+  const p = (logPass.value||'').trim();
+  const rem = logRemember.checked;
+  if(!u || !p){ alert('Kullanıcı adı ve şifre girin.'); return; }
+  const users = loadUsers();
+  if(!users[u]){ alert('Kullanıcı bulunamadı. Kayıt olun.'); return; }
+  if(users[u].banned){ alert('Hesabınız yasaklı.'); return; }
+  const passHash = await hashStr(p);
+  if(passHash !== users[u].passHash){ alert('Şifre hatalı.'); return; }
+  currentUser = u;
+  if(rem) setRemember(u); else clearRemember();
+  authOverlay.style.display = 'none';
+  ensureUser();
+  initApp();
+});
+
+(function autoRemember(){
+  const r = getRemember();
+  const users = loadUsers();
+  if(r && users[r] && !users[r].banned){
+    currentUser = r;
+    authOverlay.style.display = 'none';
+    ensureUser();
+  }
+})();
+
+logoutBtn.addEventListener('click', ()=>{
+  if(!confirm('Çıkış yapmak istiyor musunuz?')) return;
+  currentUser = null;
+  clearRemember();
+  authOverlay.style.display = 'flex';
+  updateWelcome();
+});
+
+/* ensure user data structures exist */
+function ensureUser(){
+  const users = loadUsers();
+  if(!currentUser) return;
+  if(!users[currentUser]) users[currentUser] = { passHash:'', favorites:[], warnings:0, banned:false };
+  saveUsers(users);
+  updateWelcome();
+}
+
+/* update welcome UI */
+function updateWelcome(){
+  if(currentUser){
+    welcomeText.innerText = 'Hoşgeldin, ' + currentUser;
+    welcomeSub.innerText = 'Beğendiklerin ve yorumların kaydediliyor';
+    logoutBtn.style.display = 'inline-block';
+  } else {
+    welcomeText.innerText = 'Giriş yapılmadı';
+    welcomeSub.innerText = 'Lütfen giriş yapın';
+    logoutBtn.style.display = 'none';
+  }
+}
+
+/* ---------------- MAP & UI ---------------- */
+function initMap(){
+  map = L.map('map', {tap:true}).setView([39.0,35.0],5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap contributors'}).addTo(map);
+  renderPlaces();
+}
+
+/* build city select */
+(function buildCities(){
+  const cities = Array.from(new Set(PLACES.map(p=>p.city))).sort();
+  cities.forEach(c=>{
+    const opt = document.createElement('option'); opt.value = c; opt.innerText = c;
+    citySelect.appendChild(opt);
+  });
+})();
+
+let activeCity = 'all';
+let searchQuery = '';
+citySelect.addEventListener('change', ()=>{ activeCity = citySelect.value; renderPlaces(); });
+searchInput.addEventListener('input', ()=>{ searchQuery = searchInput.value.trim().toLowerCase(); renderPlaces(); });
+favFilterBtn.addEventListener('click', ()=>{ showingFavsOnly = !showingFavsOnly; favFilterBtn.innerText = showingFavsOnly ? 'Tümünü Göster' : 'Sadece Beğendiklerim'; renderPlaces(); });
+clearFiltersBtn.addEventListener('click', ()=>{ activeCity='all'; citySelect.value='all'; searchQuery=''; searchInput.value=''; showingFavsOnly=false; favFilterBtn.innerText='Sadece Beğendiklerim'; renderPlaces(); });
+fitAllBtn.addEventListener('click', ()=>{ const bounds = PLACES.map(p=>p.coords); if(bounds.length) map.fitBounds(bounds,{padding:[60,60]}); });
+zoomInBtn.addEventListener('click', ()=>map.zoomIn());
+zoomOutBtn.addEventListener('click', ()=>map.zoomOut());
+
+/* favorites helpers */
+function getFavorites(){
+  const users = loadUsers();
+  if(!currentUser || !users[currentUser]) return [];
+  return users[currentUser].favorites || [];
+}
+function toggleFavorite(placeId){
+  if(!currentUser){ alert('Favorilere eklemek için giriş yapın.'); return; }
+  const users = loadUsers();
+  users[currentUser] = users[currentUser] || {passHash:'',favorites:[],warnings:0,banned:false};
+  users[currentUser].favorites = users[currentUser].favorites || [];
+  if(users[currentUser].favorites.includes(placeId)) users[currentUser].favorites = users[currentUser].favorites.filter(x=>x!==placeId);
+  else users[currentUser].favorites.push(placeId);
+  saveUsers(users);
+  renderPlaces();
+}
+
+/* comments helpers */
+function getAllComments(){
+  return loadComments();
+}
+function getCommentsFor(placeId){
+  const all = loadComments();
+  return all[placeId] || [];
+}
+function addCommentFor(placeId, user, text){
+  const all = loadComments();
+  all[placeId] = all[placeId] || [];
+  all[placeId].push({user, text, time: Date.now()});
+  saveComments(all);
+}
+
+/* moderation: warnings and ban after 3 warnings */
+function registerWarning(username){
+  const users = loadUsers();
+  users[username] = users[username] || {passHash:'',favorites:[],warnings:0,banned:false};
+  users[username].warnings = (users[username].warnings || 0) + 1;
+  if(users[username].warnings >= 3){
+    users[username].banned = true;
+    alert('3 uyarı alındı — hesap yasaklandı.');
+  } else {
+    alert('Uyarı: uygunsuz içerik tespit edildi. Uyarı sayınız: ' + users[username].warnings);
+  }
+  saveUsers(users);
+}
+
+/* render list and markers */
+function clearMarkers(){ markers.forEach(m=>map.removeLayer(m)); markers=[]; }
+function renderPlaces(){
+  placesListEl.innerHTML = '';
+  clearMarkers();
+  const users = loadUsers();
+  let list = PLACES.filter(p=>{
+    if(activeCity !== 'all' && p.city !== activeCity) return false;
+    if(searchQuery){
+      const s = searchQuery;
+      if(!(p.name.toLowerCase().includes(s) || p.city.toLowerCase().includes(s) || p.desc.toLowerCase().includes(s))) return false;
+    }
+    if(showingFavsOnly && currentUser){
+      const favs = getFavorites();
+      if(!favs.includes(p.id)) return false;
+    }
+    return true;
+  });
+  countEl.innerText = list.length;
+  const bounds = [];
+  list.forEach(p=>{
+    const item = document.createElement('div'); item.className='item';
+    const favs = currentUser ? getFavorites() : [];
+    const isFav = favs.includes(p.id);
+    item.innerHTML = `
+      <img class="thumb" src="${p.image}" alt="${p.name}" onerror="this.onerror=null;this.src='placeholder.jpg'">
+      <div class="meta" style="flex:1">
+        <h3>${p.name} <span style="font-size:12px;color:#94a3b8">• ${p.city}</span></h3>
+        <p>${p.desc}</p>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <div class="star ${isFav?'on':''}" data-id="${p.id}" title="Favori">${isFav?'★':'☆'}</div>
+      </div>
+    `;
+    item.addEventListener('click', ()=> { openDetail(p); map.setView(p.coords, 11, {animate:true}); });
+    item.querySelector('.star').addEventListener('click', e=>{ e.stopPropagation(); toggleFavorite(p.id); });
+    placesListEl.appendChild(item);
+
+    const m = L.marker(p.coords).addTo(map).bindPopup(`<b>${p.name}</b><div style="font-size:12px;color:#556">${p.city}</div>`);
+    m.on('click', ()=> { openDetail(p); map.setView(p.coords, 11, {animate:true}); });
+    markers.push(m);
+    bounds.push(p.coords);
+  });
+  if(bounds.length) map.fitBounds(bounds, {padding:[60,60]});
+}
+
+/* open detail in sidebar for a place */
+function openDetail(p){
+  selectedPlace = p;
+  detailCard.style.display = 'block';
+  detailName.innerText = p.name;
+  detailCity.innerText = p.city;
+  detailImage.src = p.image;
+  detailImage.onerror = ()=> detailImage.src = 'placeholder.jpg';
+  detailDesc.innerText = p.desc;
+  detailBook.href = `books/${p.id}.pdf`;
+  // fav button text
+  const favs = currentUser ? getFavorites() : [];
+  detailFavBtn.innerText = favs.includes(p.id) ? '★ Beğenden Kaldır' : '☆ Beğen';
+  // comments
+  renderCommentsUI(p.id);
+}
+
+/* render comments for a place */
+function renderCommentsUI(placeId){
+  commentsList.innerHTML = '';
+  const arr = getCommentsFor(placeId);
+  if(!arr.length) commentsList.innerHTML = '<div class="small" style="color:var(--muted)">Henüz yorum yok.</div>';
+  arr.slice().reverse().forEach(c=>{
+    const el = document.createElement('div'); el.className='comment';
+    el.innerHTML = `<strong>${escapeHtml(c.user)}</strong> <span class="small" style="color:var(--muted)">• ${new Date(c.time).toLocaleString()}</span><div style="margin-top:6px">${escapeHtml(c.text)}</div>`;
+    commentsList.appendChild(el);
+  });
+}
+
+/* post comment */
+postCommentBtn.addEventListener('click', ()=>{
+  if(!currentUser){ alert('Yorum eklemek için giriş yapın.'); return; }
+  if(!selectedPlace){ alert('Lütfen bir mekan seçin.'); return; }
+  const text = (commentInput.value||'').trim();
+  if(!text){ alert('Yorum boş olamaz.'); return; }
+  if(containsProfanity(text)){
+    // register warning; do not save comment
+    registerWarning(currentUser);
+    commentStatus.innerText = 'Uygunsuz içerik tespit edildi ve kaydedilmedi.';
+    commentInput.value = '';
+    if(loadUsers()[currentUser] && loadUsers()[currentUser].banned){
+      // force logout
+      alert('Hesabınız yasaklandı.');
+      currentUser = null;
+      updateWelcome();
+      authOverlay.style.display = 'flex';
+    }
+    return;
+  }
+  addCommentFor(selectedPlace.id, currentUser, text);
+  commentInput.value = '';
+  renderCommentsUI(selectedPlace.id);
+  commentStatus.innerText = 'Yorum gönderildi.';
+  setTimeout(()=> commentStatus.innerText = '', 2500);
+});
+
+/* utility escape */
+function escapeHtml(s){ return s.replace(/[&<"'>]/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]; }); }
+
+/* ----------------- INIT ----------------- */
+window.addEventListener('load', ()=>{
+  // ensure remembered user
+  const rem = getRemember();
+  const users = loadUsers();
+  if(rem && users[rem] && !users[rem].banned){
+    currentUser = rem;
+    authOverlay.style.display = 'none';
+    ensureUser();
+  } else {
+    authOverlay.style.display = 'flex';
+  }
+  updateWelcome();
+  initMap();
+});
+
+/* initMap called above in initMap; define alias for late binding */
+function initApp(){
+  if(!map) initMap();
+  renderPlaces();
+}
+
+/* small safety: clicking detailFav toggles */
+detailFavBtn.addEventListener('click', ()=>{
+  if(!currentUser){ alert('Beğenmek için giriş yapın.'); return; }
+  if(!selectedPlace) return;
+  toggleFavorite(selectedPlace.id);
+  detailFavBtn.innerText = getFavorites().includes(selectedPlace.id) ? '★ Beğenden Kaldır' : '☆ Beğen';
+  renderPlaces();
+});
+
+/* simple navigate button: opens Google Maps in new tab */
+detailNav.addEventListener('click', ()=>{
+  if(!selectedPlace) return;
+  const [lat,lon] = selectedPlace.coords;
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+  window.open(url,'_blank');
+});
+
+/* helper to call initMap if needed */
+function initMap(){
+  if(map) return;
+  map = L.map('map', {tap:true}).setView([39.0,35.0],5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap contributors'}).addTo(map);
+  renderPlaces();
+}
+</script>
+</body>
+</html>
