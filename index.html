@@ -10,10 +10,10 @@
   --bg:#f6f8fb; --card:#fff; --accent:#0f766e; --muted:#56616b; --radius:12px;
 }
 *{box-sizing:border-box}
-html,body,#app{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;background:var(--bg);color:#0f172a}
+html,body,#app{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;background:var(--bg);color:#0f172a;font-size:15px}
 
 /* Header */
-header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(90deg,var(--accent),#06b6d4);color:#fff;position:sticky;top:0;z-index:2000}
+header{display:flex;align-items:center;gap:12px;padding:12px 14px;background:linear-gradient(90deg,var(--accent),#06b6d4);color:#fff;position:sticky;top:0;z-index:2000}
 .logo{width:46px;height:46px;border-radius:10px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px}
 .header-title h1{margin:0;font-size:18px}
 .header-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
@@ -35,14 +35,14 @@ header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:lin
 .star{font-size:18px;color:#cbd5e1;cursor:pointer}
 .star.on{color:#f59e0b}
 
-/* detail card inside sidebar */
+/* detail card */
 .detail{background:#fbfdff;padding:10px;border-radius:10px;border:1px solid #eef2f6}
 .detail img{width:100%;height:180px;object-fit:cover;border-radius:8px;margin-top:8px}
 .comments{max-height:220px;overflow:auto;margin-top:8px}
 .comment{padding:8px;border-radius:8px;border:1px solid #eef2f6;background:white;margin-top:8px}
 .muted{color:var(--muted);font-size:13px}
 
-/* map area */
+/* map */
 .map-wrap{border-radius:12px;box-shadow:0 10px 30px rgba(15,23,42,0.06);overflow:hidden;height:100%}
 #map{width:100%;height:100%}
 
@@ -124,7 +124,7 @@ header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:lin
         <button id="clearFiltersBtn" class="btn">Temizle</button>
       </div>
 
-      <!-- Detail card (shows selected place details & comments) -->
+      <!-- Detail -->
       <div id="detailCard" class="detail" style="display:none">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div>
@@ -156,7 +156,7 @@ header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:lin
         </div>
       </div>
 
-      <!-- Places list -->
+      <!-- list -->
       <div class="list" id="placesList" aria-live="polite" style="margin-top:8px"></div>
 
       <footer style="margin-top:auto" class="sidefoot">
@@ -180,36 +180,35 @@ header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:lin
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-/* ========== CONFIG: 25 places ========== 
-  Filenames MUST match exactly (lowercase, no spaces) and be in same folder as index.html
-  Optional book PDFs: books/P01.pdf ... P25.pdf
-========================================*/
+/* ========== PLACES (25) ========== 
+Files must match exactly and be in same folder as index.html
+======================================*/
 const PLACES = [
-  {id:'P01', name:'Hasankeyf', city:'Batman', coords:[37.8786,41.1241], desc:'Dicle Nehri kıyısında katmanlı arkeolojik yerleşim ve tarihî kalıntılar.', image:'hasankeyf.jpg'},
-  {id:'P02', name:'Safranbolu Evleri', city:'Karabük', coords:[41.2500,32.6900], desc:'Osmanlı dönemi ev dokusu ve sivil mimarlık örnekleri.', image:'safranbolu.jpg'},
-  {id:'P03', name:'Göbekli Tepe', city:'Şanlıurfa', coords:[37.2231,38.9226], desc:'Dünyanın en eski tapınak yapılarından; T biçimli dikili taşlar.', image:'gobeklitepe.jpg'},
-  {id:'P04', name:'Pamukkale Travertenleri', city:'Denizli', coords:[37.9241,29.1180], desc:'Termal kaynakların oluşturduğu beyaz traverten terasları ve Hierapolis.', image:'pamukkale.jpg'},
-  {id:'P05', name:'Kapadokya', city:'Nevşehir', coords:[38.6431,34.8276], desc:'Peri bacaları, kaya kiliseleri ve yer altı şehirleriyle ünlü bölge.', image:'kapadokya.jpg'},
-  {id:'P06', name:'Topkapı Sarayı', city:'İstanbul', coords:[41.0128,28.9833], desc:'Osmanlı padişahlarının resmi sarayı, hazine koleksiyonları.', image:'topkapi.jpg'},
-  {id:'P07', name:'Ani Harabeleri', city:'Kars', coords:[40.5070,43.5720], desc:'İpek Yolu üzerinde ortaçağ kenti kalıntıları.', image:'ani.jpg'},
-  {id:'P08', name:'Nemrut Dağı', city:'Adıyaman', coords:[37.9845,38.7445], desc:'Kommagene kral mezar tepesi; dev heykeller ve gün doğumu manzarası.', image:'nemrut.jpg'},
-  {id:'P09', name:'Truva Antik Kenti', city:'Çanakkale', coords:[39.9570,26.2384], desc:'Efsanevi Truva kenti ve arkeolojik kalıntıları.', image:'truva.jpg'},
-  {id:'P10', name:'Efes Antik Kenti', city:'İzmir', coords:[37.9410,27.3416], desc:'Antik kentin Celsus Kütüphanesi ve liman bölgesi.', image:'efes.jpg'},
-  {id:'P11', name:'Sümela Manastırı', city:'Trabzon', coords:[40.7114,39.7172], desc:'Dağ yamacına oyulmuş tarihi manastır kompleksi.', image:'sumela.jpg'},
-  {id:'P12', name:'Mardin Eski Şehir', city:'Mardin', coords:[37.3120,40.7350], desc:'Tarihi taş evler ve çok katmanlı kültürel yapı.', image:'mardin.jpg'},
-  {id:'P13', name:'Van Kalesi', city:'Van', coords:[38.4940,43.3800], desc:'Tarihi kale ve göl manzaraları.', image:'van.jpg'},
-  {id:'P14', name:'Alanya Kalesi', city:'Antalya', coords:[36.5436,32.0000], desc:'Tarihi kale, liman ve manzaralar.', image:'alanya.jpg'},
-  {id:'P15', name:'Hattuşa Antik Kenti', city:'Çorum', coords:[40.0240,34.6190], desc:'Hititlerin başkenti; tapınaklar ve anıtsal yapılar.', image:'hattusa.jpg'},
-  {id:'P16', name:'Bergama Antik Kenti', city:'İzmir', coords:[39.1200,27.1830], desc:'Helenistik akropol ve Asklepion kalıntıları.', image:'bergama.jpg'},
-  {id:'P17', name:'Çatalhöyük', city:'Konya', coords:[37.6670,32.8260], desc:'Neolitik dönem yerleşimi; erken tarım toplumu örneği.', image:'catalhoyuk.jpg'},
-  {id:'P18', name:'Ulu Cami (Bursa)', city:'Bursa', coords:[40.1828,29.0616], desc:'Bursa’nın en büyük camisi; tarihî yapı ve çarşı.', image:'ulucami.jpg'},
-  {id:'P19', name:'Perge Antik Kenti', city:'Antalya', coords:[36.9191,30.9186], desc:'Helenistik ve Roma dönemi kalıntıları ile sütunlu caddeler.', image:'perge.jpg'},
-  {id:'P20', name:'Aphrodisias', city:'Aydın', coords:[37.8000,27.8747], desc:'Tanrıça Afrodit’e adanmış antik kent.', image:'aphrodisias.jpg'},
-  {id:'P21', name:'Sardes Antik Kenti', city:'Manisa', coords:[38.4833,27.0333], desc:'Lidya başkenti; tapınak ve tiyatro kalıntıları.', image:'sardes.jpg'},
-  {id:'P22', name:'Harran Evleri', city:'Şanlıurfa', coords:[36.9195,39.0214], desc:'Küp evleri ve antik yerleşim izleriyle bilinir.', image:'harran.jpg'},
-  {id:'P23', name:'Zeugma Mozaik Müzesi', city:'Gaziantep', coords:[37.0662,37.3833], desc:'Dünyanın en zengin mozaik koleksiyonlarından biri.', image:'zeugma.jpg'},
-  {id:'P24', name:'Bergama Asklepion', city:'İzmir', coords:[39.1220,27.1830], desc:'Antik dönemde sağlık merkezi olarak kullanılan Asklepion.', image:'asklepion.jpg'},
-  {id:'P25', name:'Ayasofya Camii', city:'İstanbul', coords:[41.0086,28.9802], desc:'Bizans ve Osmanlı dönemlerinden izler taşıyan büyük yapı.', image:'ayasofya.jpg'}
+  {id:'P01', name:'Alacahöyük', city:'Çorum', coords:[40.0015,34.5539], desc:'Türkiye’nin erken demir çağı merkezlerinden; Hitit ve öncesi kalıntılar.', image:'alacahoyuk.jpg'},
+  {id:'P02', name:'Alahan Manastırı', city:'Karaman', coords:[37.0673,32.6346], desc:'Erken dönem hristiyan manastır kompleksi.', image:'alahanmanastiri.jpg'},
+  {id:'P03', name:'Aizonai', city:'Uşak', coords:[38.6733,29.7650], desc:'Antik kent ve agora kalıntıları.', image:'aizonai.jpg'},
+  {id:'P04', name:'Alanya Kalesi', city:'Antalya', coords:[36.5486,32.0165], desc:'Tarihi kale ve liman manzaraları.', image:'alanya_kalesi.jpg'},
+  {id:'P05', name:'Ani Harabeleri', city:'Kars', coords:[40.5070,43.5720], desc:'Ortaçağ kent kalıntıları; sınır ötesi tarihin izleri.', image:'ani_harabeleri.jpg'},
+  {id:'P06', name:'Arsemia', city:'Kahramanmaraş', coords:[37.1710,36.9465], desc:'Tarihi yerleşim ve kayalara oyulmuş kalıntılar.', image:'arsemia.jpg'},
+  {id:'P07', name:'Aspendos', city:'Antalya', coords:[36.9383,31.1761], desc:'Roma dönemi tiyatrosu; akustiği ile meşhur.', image:'aspendos.jpg'},
+  {id:'P08', name:'Assos', city:'Çanakkale', coords:[39.3700,26.0811], desc:'Antik liman kenti ve felsefi merkez.', image:'assos.jpg'},
+  {id:'P09', name:'Bodrum Kalesi', city:'Muğla', coords:[37.0344,27.4305], desc:'Sualtı arkeoloji müzesine ev sahipliği yapan kale.', image:'bodrumkalesi.jpg'},
+  {id:'P10', name:'Çatalhöyük', city:'Konya', coords:[37.6670,32.8260], desc:'Neolitik dönem topluluk yerleşimi; erken mimari örnekleri.', image:'catalhoyuk.jpg'},
+  {id:'P11', name:'Efes', city:'İzmir', coords:[37.9410,27.3416], desc:'Celsus kütüphanesi ve büyük liman kenti kalıntıları.', image:'efes.jpg'},
+  {id:'P12', name:'Göbekli Tepe', city:'Şanlıurfa', coords:[37.2231,38.9226], desc:'Dünyanın bilinen en eski tapınağı; anıtsal taşlar.', image:'gobeklitepe.jpg'},
+  {id:'P13', name:'Hasankeyf', city:'Batman', coords:[37.8786,41.1241], desc:'Dicle kıyısında çok katmanlı arkeolojik yerleşim; mağara ve kalıntılar.', image:'hasankeyf.jpg'},
+  {id:'P14', name:'Hattuşa', city:'Çorum', coords:[40.0217,34.6152], desc:'Hitit İmparatorluğu’nun başkenti; tapınaklar ve surlar.', image:'hattusa.jpg'},
+  {id:'P15', name:'Hierapolis', city:'Denizli', coords:[37.9241,29.1180], desc:'Beyaz travertenlerin yanında antik kent kalıntıları.', image:'hierapolis.jpg'},
+  {id:'P16', name:'Kaniş-Karum (Kaniskarum)', city:'Kırşehir', coords:[39.6827,34.1220], desc:'Ticaret kolonisi ve antik kazı alanları.', image:'kaniskarum.jpg'},
+  {id:'P17', name:'Myra', city:'Antalya', coords:[36.2681,29.0987], desc:'Likya dönemi kaya mezarları ve antik liman kenti.', image:'myra.jpg'},
+  {id:'P18', name:'Nemrut Dağı', city:'Adıyaman', coords:[37.9845,38.7445], desc:'Kommagene kral mezar tepesi; dev heykeller.', image:'nemrut.jpg'},
+  {id:'P19', name:'Pamukkale', city:'Denizli', coords:[37.9241,29.1180], desc:'Termal su kaynaklarının oluşturduğu traverten teraslar ve Hierapolis.', image:'pamukkale.jpg'},
+  {id:'P20', name:'Pergamon (Pergamon)', city:'İzmir', coords:[39.1200,27.1830], desc:'Akropol ve Asklepion kalıntıları.', image:'pergamon.jpg'},
+  {id:'P21', name:'Phaselis', city:'Antalya', coords:[36.5150,30.5590], desc:'Antik liman kenti; güzel koylarıyla bilinir.', image:'phaselis.jpg'},
+  {id:'P22', name:'Sagalassos', city:'Burdur', coords:[37.6760,30.5260], desc:'Yüksek rakımlı antik kent ve tiyatro.', image:'sagalassos.jpg'},
+  {id:'P23', name:'Sümela Manastırı', city:'Trabzon', coords:[40.7114,39.7172], desc:'Dağ yamacına oyulmuş manastır kompleksi.', image:'sumela.jpg'},
+  {id:'P24', name:'Side Antik Kenti', city:'Antalya', coords:[36.7781,31.3815], desc:'Antik tiyatro ve liman kalıntıları.', image:'sideantikkenti.jpg'},
+  {id:'P25', name:'Tralleis', city:'Aydın', coords:[37.8550,27.8433], desc:'Antik kent kalıntıları; tarihî eserler.', image:'tralleis.jpg'}
 ];
 
 /* ========== Storage helpers ========== */
@@ -321,6 +320,7 @@ doLogin.addEventListener('click', async ()=>{
   ensureUserAndStart();
 });
 
+/* auto-remember */
 (function autoRemember(){
   const r = getRemember();
   const users = loadUsers();
